@@ -1,0 +1,44 @@
+name: Lint Check and Issue Reporter
+
+on: [push, pull_request]
+
+permissions:
+  issues: write
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    env:
+      STUDENT_NAME: "Korawit Bhatanaprabhabhan"
+      STUDENT_ID: "6530007021"
+      BREAK_REASON: "I removed msg) in line 3"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '23.10'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run ESLint and capture output
+        id: lint
+        run: npx eslint
+
+      - name: Create Issue on Lint Fail
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.UPSTREAM_TOKEN }}
+          script: |
+            const issueTitle = `ESLint Error Found from Student ${process.env.STUDENT_ID} - ${process.env.STUDENT_NAME}`
+            const issueBody = `**Student Name:** ${process.env.STUDENT_NAME} **Student ID:** ${process.env.STUDENT_ID}  **What I did to break it:** ${process.env.BREAK_REASON} **ESLint Output:*${process.env.ESLINT_OUTPUT}`;
+            await github.rest.issues.create({
+                owner: "Walterwilly",
+                repo: "ci-cd-homework", 
+                title: issueTitle,
+                body: issueBody,
+            });
